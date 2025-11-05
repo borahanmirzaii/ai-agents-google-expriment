@@ -1,0 +1,235 @@
+# Agent Configuration
+# This file defines the configuration for all agents in the system
+
+agents:
+  # Base Agent Settings
+  base:
+    model_name: "gemini-2.5-flash-preview-5-20"
+    temperature: 0.7
+    max_tokens: 8192
+    top_p: 0.95
+    top_k: 40
+    timeout: 300
+    retry_config:
+      max_retries: 3
+      initial_delay: 1.0
+      max_delay: 60.0
+      exponential_base: 2.0
+
+  # Researcher Agent
+  researcher:
+    name: "ResearcherAgent"
+    description: "Gathers information from web and external sources"
+    model_name: "gemini-2.5-flash-preview-5-20"
+    temperature: 0.5
+    max_tokens: 8192
+    tools:
+      - web_search
+      - fetch_url
+      - extract_content
+    system_prompt: |
+      You are a research specialist agent. Your role is to:
+      - Search for relevant information on the web
+      - Extract and summarize key findings
+      - Verify information from multiple sources
+      - Provide structured, well-cited research results
+
+      Always be thorough, accurate, and cite your sources.
+
+  # Analyzer Agent
+  analyzer:
+    name: "AnalyzerAgent"
+    description: "Analyzes data and provides insights"
+    model_name: "gemini-2.5-flash-preview-5-20"
+    temperature: 0.3
+    max_tokens: 8192
+    tools:
+      - data_processor
+      - code_analyzer
+      - sentiment_analyzer
+    system_prompt: |
+      You are an analytical agent. Your role is to:
+      - Analyze data and identify patterns
+      - Provide actionable insights
+      - Generate structured reports
+      - Evaluate quality and accuracy
+
+      Be precise, logical, and data-driven in your analysis.
+
+  # Executor Agent
+  executor:
+    name: "ExecutorAgent"
+    description: "Executes tasks and generates outputs"
+    model_name: "gemini-2.5-flash-preview-5-20"
+    temperature: 0.7
+    max_tokens: 8192
+    tools:
+      - code_executor
+      - file_manager
+      - api_caller
+    system_prompt: |
+      You are an execution agent. Your role is to:
+      - Execute code safely in sandboxed environments
+      - Perform file operations
+      - Call external APIs
+      - Generate outputs and deliverables
+
+      Always prioritize safety and validate inputs before execution.
+
+  # Orchestrator Agent
+  orchestrator:
+    name: "OrchestratorAgent"
+    description: "Coordinates multiple agents and workflows"
+    model_name: "gemini-2.5-flash-preview-5-20"
+    temperature: 0.5
+    max_tokens: 8192
+    tools:
+      - agent_router
+      - workflow_manager
+      - task_scheduler
+    system_prompt: |
+      You are an orchestrator agent. Your role is to:
+      - Coordinate multiple specialized agents
+      - Break down complex tasks into subtasks
+      - Route tasks to appropriate agents
+      - Synthesize results from multiple agents
+      - Ensure workflow efficiency
+
+      Think strategically about task decomposition and agent coordination.
+
+# 9-S Creative Pipeline Agents
+creative_pipeline:
+  silent:
+    name: "SilentAgent"
+    description: "Captures the initial spark, pain point, or seed idea"
+    system_prompt: |
+      You capture the essence of creative inspiration. Listen deeply to:
+      - Pain points and problems
+      - Sparks of inspiration
+      - Unmet needs
+      - Opportunities for innovation
+
+  souls:
+    name: "SoulsAgent"
+    description: "Defines identity, purpose, and creative DNA"
+    system_prompt: |
+      You define the soul and identity of the project:
+      - Core values and principles
+      - Brand personality
+      - Target audience
+      - Unique value proposition
+
+  story:
+    name: "StoryAgent"
+    description: "Structures narrative and intent"
+    system_prompt: |
+      You craft compelling narratives:
+      - Story arc and flow
+      - User journey
+      - Emotional resonance
+      - Message and meaning
+
+  script:
+    name: "ScriptAgent"
+    description: "Creates detailed blueprint and execution plan"
+    system_prompt: |
+      You create detailed execution plans:
+      - Technical specifications
+      - Implementation steps
+      - Resource requirements
+      - Timeline and milestones
+
+  scene:
+    name: "SceneAgent"
+    description: "Generates components and assets"
+    system_prompt: |
+      You generate creative assets:
+      - Visual elements
+      - Code components
+      - Content pieces
+      - Design systems
+
+  science:
+    name: "ScienceAgent"
+    description: "AI orchestration and autonomous execution"
+    system_prompt: |
+      You orchestrate AI-powered execution:
+      - Automate repetitive tasks
+      - Optimize workflows
+      - Apply ML/AI where beneficial
+      - Continuous improvement
+
+  screen:
+    name: "ScreenAgent"
+    description: "Assembly, testing, and finishing"
+    system_prompt: |
+      You assemble and polish the final product:
+      - Integration testing
+      - Quality assurance
+      - Refinement and polish
+      - Final validation
+
+  spread:
+    name: "SpreadAgent"
+    description: "Distribution and deployment"
+    system_prompt: |
+      You handle distribution:
+      - Deployment strategies
+      - Marketing and outreach
+      - Launch planning
+      - Distribution channels
+
+  cinema:
+    name: "CinemaOrchestrator"
+    description: "Master orchestrator for the full 9-S pipeline"
+    system_prompt: |
+      You are the master conductor of the 9-S creative pipeline.
+      Coordinate all agents from Silent through Spread to create
+      complete, polished creative outputs.
+
+# Tool Configurations
+tools:
+  web_search:
+    enabled: true
+    max_results: 10
+    timeout: 30
+
+  code_executor:
+    enabled: true
+    sandbox_mode: true
+    allowed_languages:
+      - python
+      - javascript
+      - bash
+    timeout: 60
+    max_memory_mb: 512
+
+  file_manager:
+    enabled: true
+    allowed_operations:
+      - read
+      - write
+      - list
+      - delete
+    max_file_size_mb: 100
+    allowed_extensions:
+      - .txt
+      - .json
+      - .yaml
+      - .md
+      - .py
+      - .js
+
+# Workflow Configurations
+workflows:
+  sequential:
+    max_steps: 50
+    continue_on_error: false
+
+  parallel:
+    max_concurrent: 5
+    timeout: 600
+
+  loop:
+    max_iterations: 100
+    break_on_error: true

@@ -1,0 +1,88 @@
+# Cloud Build configuration for AI Agent System
+# Builds, tests, and deploys the application to Cloud Run
+
+steps:
+  # Step 1: Run tests
+  - name: 'python:3.11-slim'
+    id: 'run-tests'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        pip install -r requirements.txt
+        pip install pytest pytest-cov
+        pytest tests/ -v --cov --cov-report=term
+    waitFor: ['-']
+
+  # Step 2: Build container image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-image'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/ai-agent-system:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/ai-agent-system:latest'
+      - '-f'
+      - 'deploy/Dockerfile'
+      - '.'
+    waitFor: ['run-tests']
+
+  # Step 3: Push container image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-image'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/ai-agent-system:$COMMIT_SHA'
+    waitFor: ['build-image']
+
+  # Step 4: Push latest tag
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-latest'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/ai-agent-system:latest'
+    waitFor: ['build-image']
+
+  # Step 5: Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-cloud-run'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'ai-agent-system'
+      - '--image=gcr.io/$PROJECT_ID/ai-agent-system:$COMMIT_SHA'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--memory=4Gi'
+      - '--cpu=2'
+      - '--max-instances=10'
+      - '--min-instances=0'
+      - '--timeout=300'
+      - '--set-env-vars=PROJECT_ID=$PROJECT_ID,LOCATION=us-central1'
+    waitFor: ['push-image']
+
+# Build configuration
+timeout: '1200s'
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
+# Store images in Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/ai-agent-system:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/ai-agent-system:latest'
+
+# Substitutions (can be overridden)
+substitutions:
+  _SERVICE_NAME: 'ai-agent-system'
+  _REGION: 'us-central1'
+  _MEMORY: '4Gi'
+  _CPU: '2'
+
+# Tags for organizing builds
+tags:
+  - 'ai-agent-system'
+  - 'production'

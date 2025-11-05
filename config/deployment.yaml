@@ -1,0 +1,222 @@
+# Deployment Configuration
+# Configuration for deploying to different environments
+
+# Vertex AI Agent Engine Deployment
+agent_engine:
+  enabled: true
+  runtime: "vertex-ai-agent-engine"
+  model: "gemini-2.5-flash-preview-5-20"
+  region: "us-central1"
+
+  features:
+    memory_bank:
+      enabled: false
+      ttl_days: 30
+    session_management:
+      enabled: true
+      timeout_minutes: 60
+    streaming:
+      enabled: true
+      bidirectional: true
+    grounding:
+      enabled: false
+      sources:
+        - type: "google_search"
+        - type: "vertex_ai_search"
+
+  scaling:
+    min_instances: 1
+    max_instances: 10
+    target_cpu_utilization: 70
+
+  monitoring:
+    enable_logging: true
+    enable_metrics: true
+    log_level: "INFO"
+
+# Cloud Run Deployment
+cloud_run:
+  enabled: true
+  service_name: "ai-agent-system"
+  region: "us-central1"
+
+  container:
+    image: "gcr.io/${PROJECT_ID}/ai-agent-system"
+    port: 8080
+
+  resources:
+    cpu: "2"
+    memory: "4Gi"
+    timeout: 300
+    max_concurrent_requests: 80
+
+  scaling:
+    min_instances: 0
+    max_instances: 10
+    target_concurrency: 80
+
+  environment_variables:
+    ENVIRONMENT: "production"
+    LOG_LEVEL: "INFO"
+    ENABLE_TRACING: "true"
+
+  vpc:
+    enabled: false
+    connector: ""
+
+  security:
+    allow_unauthenticated: false
+    service_account: "${PROJECT_ID}@appspot.gserviceaccount.com"
+
+  monitoring:
+    enable_cloud_logging: true
+    enable_cloud_monitoring: true
+    enable_cloud_trace: true
+
+# Google Kubernetes Engine (GKE) Deployment
+gke:
+  enabled: false
+  cluster_name: "ai-agent-cluster"
+  region: "us-central1"
+
+  deployment:
+    replicas: 3
+    strategy:
+      type: "RollingUpdate"
+      max_surge: 1
+      max_unavailable: 0
+
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "2Gi"
+    limits:
+      cpu: "2000m"
+      memory: "4Gi"
+
+  autoscaling:
+    enabled: true
+    min_replicas: 2
+    max_replicas: 20
+    target_cpu_utilization: 70
+    target_memory_utilization: 80
+
+  service:
+    type: "LoadBalancer"
+    port: 80
+    target_port: 8080
+
+# Local Development
+local:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8080
+  reload: true
+  workers: 1
+  log_level: "DEBUG"
+
+  features:
+    enable_hot_reload: true
+    enable_debug_mode: true
+    mock_external_services: false
+
+# Build Configuration
+build:
+  dockerfile: "./deploy/Dockerfile"
+  build_args:
+    PYTHON_VERSION: "3.11"
+
+  cloudbuild:
+    timeout: "1200s"
+    machine_type: "E2_HIGHCPU_8"
+
+  artifact_registry:
+    repository: "ai-agents"
+    location: "us-central1"
+
+# CI/CD Configuration
+cicd:
+  triggers:
+    on_push:
+      branches:
+        - main
+        - develop
+    on_pull_request:
+      branches:
+        - main
+
+  stages:
+    - name: "test"
+      commands:
+        - "pytest tests/ -v --cov"
+        - "ruff check ."
+        - "mypy ."
+
+    - name: "build"
+      commands:
+        - "docker build -t gcr.io/${PROJECT_ID}/ai-agent-system ."
+
+    - name: "deploy"
+      environment: "production"
+      commands:
+        - "gcloud run deploy ${SERVICE_NAME} --image gcr.io/${PROJECT_ID}/ai-agent-system"
+
+# Monitoring and Observability
+observability:
+  logging:
+    provider: "cloud_logging"
+    level: "INFO"
+    format: "json"
+
+  metrics:
+    provider: "cloud_monitoring"
+    collection_interval: 60
+    custom_metrics:
+      - agent_execution_time
+      - agent_success_rate
+      - tool_invocation_count
+      - error_rate
+
+  tracing:
+    provider: "cloud_trace"
+    sample_rate: 0.1
+
+  alerting:
+    enabled: true
+    channels:
+      - email
+      - slack
+    policies:
+      - name: "High Error Rate"
+        condition: "error_rate > 5%"
+        duration: "5m"
+      - name: "High Latency"
+        condition: "p95_latency > 5s"
+        duration: "5m"
+
+# Security Configuration
+security:
+  authentication:
+    required: true
+    methods:
+      - oauth2
+      - service_account
+
+  authorization:
+    rbac_enabled: true
+
+  secrets:
+    provider: "secret_manager"
+    project_id: "${PROJECT_ID}"
+
+  network:
+    enable_vpc: false
+    allowed_ip_ranges: []
+
+  data:
+    encrypt_at_rest: true
+    encrypt_in_transit: true
+
+  compliance:
+    enable_audit_logs: true
+    data_residency: "us"
