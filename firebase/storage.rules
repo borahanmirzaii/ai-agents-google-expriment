@@ -1,0 +1,25 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // User-specific storage
+    match /users/{userId}/{allPaths=**} {
+      // Allow read if authenticated and accessing own files
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Allow write if authenticated, accessing own files, and file size is under 50MB
+      allow write: if request.auth != null
+                   && request.auth.uid == userId
+                   && request.resource.size < 50 * 1024 * 1024;
+
+      // Allow delete if authenticated and accessing own files
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Public assets (if needed)
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}
