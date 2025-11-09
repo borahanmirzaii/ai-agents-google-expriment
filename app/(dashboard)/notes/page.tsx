@@ -7,14 +7,21 @@ import { Input } from "@/components/ui/input";
 import { PlusCircle, Search, Loader2 } from "lucide-react";
 import { useNotes } from "@/hooks/use-notes";
 import { useNotesStore } from "@/store/notes-store";
+import { useUIStore } from "@/store/ui-store";
 import { NoteCard } from "@/components/notes/note-card";
-import { CreateNoteDialog } from "@/components/notes/create-note-dialog";
-import { NoteType, LifePillar } from "@/types";
+import { CreateNoteMulti } from "@/components/notes/create-note-multi";
+import { EditNoteDialog } from "@/components/notes/edit-note-dialog";
+import { DeleteNoteDialog } from "@/components/notes/delete-note-dialog";
+import { Note, NoteType, LifePillar } from "@/types";
 
 export default function NotesPage() {
-  const { notes, loading } = useNotes();
+  const { notes, loading, updateNote, deleteNote } = useNotes();
   const { filters, setFilters } = useNotesStore();
+  const { addToast } = useUIStore();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   const handleTypeFilter = (type: NoteType | "all") => {
@@ -23,6 +30,40 @@ export default function NotesPage() {
 
   const handlePillarFilter = (pillar: LifePillar | "all") => {
     setFilters({ pillar });
+  };
+
+  const handleEdit = (note: Note) => {
+    setSelectedNote(note);
+    setEditDialogOpen(true);
+  };
+
+  const handleDelete = (note: Note) => {
+    setSelectedNote(note);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleSaveEdit = async (id: string, updates: Partial<Note>) => {
+    try {
+      await updateNote(id, updates);
+      addToast({ type: "success", message: "Note updated successfully!" });
+    } catch (error) {
+      console.error("Failed to update note:", error);
+      addToast({ type: "error", message: "Failed to update note" });
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedNote) return;
+
+    try {
+      await deleteNote(selectedNote.id);
+      addToast({ type: "success", message: "Note deleted successfully!" });
+      setDeleteDialogOpen(false);
+      setSelectedNote(null);
+    } catch (error) {
+      console.error("Failed to delete note:", error);
+      addToast({ type: "error", message: "Failed to delete note" });
+    }
   };
 
   // Filter notes by search term (client-side)
@@ -152,13 +193,34 @@ export default function NotesPage() {
       {!loading && filteredNotes.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredNotes.map((note) => (
-            <NoteCard key={note.id} note={note} />
+            <NoteCard
+              key={note.id}
+              note={note}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
           ))}
         </div>
       )}
 
       {/* Create Note Dialog */}
-      <CreateNoteDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
+      <CreateNoteMulti open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
+
+      {/* Edit Note Dialog */}
+      <EditNoteDialog
+        note={selectedNote}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSave={handleSaveEdit}
+      />
+
+      {/* Delete Note Dialog */}
+      <DeleteNoteDialog
+        note={selectedNote}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

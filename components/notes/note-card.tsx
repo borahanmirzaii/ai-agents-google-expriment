@@ -1,12 +1,15 @@
 import { Note } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Mic, Image, Video } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, Mic, Image, Video, Edit, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface NoteCardProps {
   note: Note;
   onClick?: () => void;
+  onEdit?: (note: Note) => void;
+  onDelete?: (note: Note) => void;
 }
 
 const noteIcons = {
@@ -16,8 +19,18 @@ const noteIcons = {
   video: Video,
 };
 
-export function NoteCard({ note, onClick }: NoteCardProps) {
+export function NoteCard({ note, onClick, onEdit, onDelete }: NoteCardProps) {
   const Icon = noteIcons[note.type];
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit?.(note);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete?.(note);
+  };
 
   return (
     <Card
@@ -30,11 +43,33 @@ export function NoteCard({ note, onClick }: NoteCardProps) {
             <Icon className="h-4 w-4 text-muted-foreground" />
             <CardTitle className="text-lg">{note.title}</CardTitle>
           </div>
-          {note.pillar && (
-            <Badge variant="secondary" className="text-xs">
-              {note.pillar}
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {note.pillar && (
+              <Badge variant="secondary" className="text-xs">
+                {note.pillar}
+              </Badge>
+            )}
+            {onEdit && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleEdit}
+                className="h-8 w-8 p-0"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDelete}
+                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
         <CardDescription>
           {formatDistanceToNow(note.createdAt, { addSuffix: true })}
